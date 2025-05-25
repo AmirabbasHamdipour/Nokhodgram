@@ -1,0 +1,730 @@
+﻿Build1=Default,Nokhod.Gram
+File1=add.png
+File10=Login_Page.bal
+File11=Settings.bal
+File12=settings.png
+File13=Silver-Blur-Background-Wallpaper-300x169.jpg
+File14=Zoom.bal
+File2=billabong.ttf
+File3=b-nazanin.ttf
+File4=BTN1.bal
+File5=Daco_5589426.png
+File6=frm_CustomLayout_1.bal
+File7=HisProf.bal
+File8=IMG.bal
+File9=Layout.bal
+FileGroup1=Default Group
+FileGroup10=Default Group
+FileGroup11=Default Group
+FileGroup12=Default Group
+FileGroup13=Default Group
+FileGroup14=Default Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+FileGroup4=Default Group
+FileGroup5=Default Group
+FileGroup6=Default Group
+FileGroup7=Default Group
+FileGroup8=Default Group
+FileGroup9=Default Group
+Group=Default Group
+Library1=ambutton
+Library10=dialogs
+Library11=json
+Library12=keyvaluestore
+Library13=manampersiandate
+Library14=okhttputils2
+Library15=phone
+Library16=runtimepermissions
+Library17=sql
+Library18=supabase
+Library19=xcustomlistview
+Library2=as_settings
+Library20=xui
+Library21=zoomimageview
+Library22=javaobject
+Library3=as_textfieldadvanced
+Library4=asdraggablebottomcard
+Library5=audio
+Library6=b4xcollections
+Library7=base64encodedecodeimage
+Library8=clipboard
+Library9=core
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: https://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="37"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~CreateResourceFromFile(Macro, Themes.LightTheme)~\n~AddPermission(android.permission.READ_EXTERNAL_STORAGE)~\n~AddPermission(android.permission.WRITE_EXTERNAL_STORAGE)~\n~'End of default text.~\n~~\n~AddActivityText(Main,~\n~<intent-filter>~\n~    <action android:name="android.intent.action.SEND" />~\n~    <category android:name="android.intent.category.DEFAULT" />~\n~    <data android:mimeType="image/*" />~\n~	<data android:mimeType="video/*" />~\n~</intent-filter>)
+Module1=HisProf
+Module2=Login
+Module3=Settings
+Module4=Starter
+Module5=Zoom
+NumberOfFiles=14
+NumberOfLibraries=22
+NumberOfModules=5
+Version=13
+@EndOfDesignText@
+#Region  Project Attributes 
+	#ApplicationLabel: Nokhodgram
+	#VersionCode: 1
+	#VersionName: 
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: unspecified
+	#CanInstallToExternalStorage: False
+	#BridgeLogger: True
+#End Region
+
+#Region  Activity Attributes 
+	#FullScreen: False
+	#IncludeTitle: True
+#End Region
+
+Sub Process_Globals
+	Private xui As XUI
+	Private xSupabase As Supabase
+	Private Realtime As SupabaseRealtime
+	Type Post(id As Int,text As String,Img As String,Sender1 As Int,Date As String,Time As String)
+	Type Information(id As Int,Name As String,Phone As String,LastSeen As String,Img As String)
+	Public zoo As Bitmap
+	Public HisID As Int
+End Sub
+
+Sub Globals
+	Dim inf As Information
+	Private Scroll As ScrollView
+	Dim top As Int=80dip
+	Dim mpd As ManamPersianDate
+	Dim LastVol As Int=0
+	Dim IsOnePlaying As Boolean
+	Dim playing As Int
+	Dim cd As ColorDrawable
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	Activity.LoadLayout("Layout")
+	Dim ssc As CSBuilder
+	ssc.Initialize.Size(45).Typeface(Typeface.LoadFromAssets("billabong.ttf")).Append(" Nokhodgram ").PopAll
+	Activity.Title=ssc
+	Activity.AddMenuItem3("add","Add",LoadBitmap(File.DirAssets,"add.png"),True)
+	Activity.AddMenuItem3("settings","Settings",LoadBitmap(File.DirAssets,"settings.png"),True)
+	Check_User_Is_Loged_In
+	intialize_SupaBase
+	Share_By_Gallary
+	Sleep(0)
+	Load_Posts
+End Sub
+
+Sub Activity_Resume
+
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+End Sub
+
+Sub Show_FileSelector
+	Dim Chooser As ContentChooser
+	Chooser.Initialize("chooser")
+	Chooser.Show("image/*", "Select image")
+End Sub
+
+Sub chooser_Result (Success As Boolean, Dir As String, FileName As String)
+	If Success Then
+		Dim id As InputDialog
+		Dim sf As Object = id.ShowAsync("", "عنوان پست را اضافه کنید", "تایید", "", "انصراف", Null, False)
+		Wait For (sf) Dialog_Result(Result As Int)
+		If Result = DialogResponse.POSITIVE And id.Input<>"" Then
+			ProgressDialogShow2("در حال آپلود...",False)
+			Dim a As String=GenerateUniqueText&".png"
+			File.Copy(Dir,FileName,File.dirinternal,a)			
+			Upload_File(File.dirinternal,a,id.Input)
+		End If
+	Else
+		ToastMessageShow("تصویری انتخاب نشده", True)
+		Scroll_ScrollChanged(2)
+	End If
+End Sub
+
+Sub Send_Image_Req(Text As String,link As String)
+	DateTime.TimeFormat="HH:mm"
+	Dim Insert As Supabase_DatabaseInsert = xSupabase.Database.InsertData
+	Insert.From("NokhodGram")
+	Dim InsertMap As Map = CreateMap("Text":Text,"Img":link,"Sender":File.ReadMap(File.DirInternal,"User.map").Get("id"),"Date": mpd.PersianDay&mpd.PersianMonthName,"Time":DateTime.Time(DateTime.Now))
+	Wait For (Insert.Insert(InsertMap).Execute) Complete (Result As SupabaseDatabaseResult)
+	If Result.Error.Success=True Then
+		ToastMessageShow("تصویر با موفقیت آپلود شد.",False)
+		Load_Posts
+		ProgressDialogHide
+	End If
+End Sub
+
+public Sub intialize_SupaBase
+	'Please Intialize Your SupaBase With Your Project URL And Your API_Key
+	xSupabase.InitializeEvents(Me,"Supabase")
+	Wait For (xSupabase.Auth.isUserLoggedIn) Complete (isLoggedIn As Boolean)
+	If isLoggedIn = False Then
+		Wait For (xSupabase.Auth.LogIn_Anonymously) Complete (User As SupabaseUser)
+		If User.Error.Success Then
+			Log("successfully logged in with ")
+		Else
+			Log("Error: " & User.Error.ErrorMessage)
+			Return
+		End If
+	End If
+	Realtime.Initialize(Me,"Realtime",xSupabase)
+	Realtime.Connect
+	Wait For Realtime_Connected
+	Realtime _
+    .Channel("public","NokhodGram","") _
+    .On(Realtime.SubscribeType_PostgresChanges) _
+    .Event(Realtime.Event_ALL) _
+    .Subscribe
+	Wait For Realtime_Subscribed
+End Sub
+
+Private Sub Realtime_DataReceived(Data As SupabaseRealtime_Data)
+	Load_Posts
+End Sub
+
+Sub Load_Posts
+	playing=0
+	Wait For(Clear_Scroll) Complete (Result As Boolean)
+	Dim l As List
+	l.Initialize
+	Dim Query As Supabase_DatabaseSelect = xSupabase.Database.SelectData
+	Query.Columns("*").From("NokhodGram")
+	Wait For (Query.Execute) Complete (DatabaseResult As SupabaseDatabaseResult)
+	xSupabase.Database.PrintTable(DatabaseResult)
+	For Each Row As Map In DatabaseResult.Rows
+		Dim p As Post
+		p.Initialize
+		p.id=Row.Get("id")
+		p.text=Row.Get("Text")
+		p.Img=Row.Get("Img")
+		p.Sender1=Row.Get("Sender")
+		p.Time=Row.Get("Time")
+		p.Date=Row.Get("Date")
+		l.Add(p)
+	Next
+	l.SortType("id",False)
+	Log("Size:   "&(l.Size-1))
+	Wait For(Clear_Scroll) Complete (Result As Boolean)
+	For i=0 To l.Size-1
+		Wait For(Load_He_Information(l.Get(i).As(Post).Sender1)) Complete (Result5 As Boolean)
+		Wait For(File_Check2(l.Get(i).As(Post).Img)) Complete (Result3 As String)
+		
+		Show_Post(l.Get(i).As(Post).text,inf.Name,l.Get(i).As(Post).Date,l.Get(i).As(Post).Time,Result3,l.Get(i).As(Post).Sender1)
+	Next
+End Sub
+
+Sub Check_User_Is_Loged_In
+	If File.Exists(File.DirInternal,"User.map")=False Then
+		Activity.Finish
+		StartActivity(Login)
+	End If
+End Sub
+
+Sub Load_He_Information(id As Int)As ResumableSub
+	Dim l As List
+	l.Initialize
+	Dim Query As Supabase_DatabaseSelect = xSupabase.Database.SelectData
+	Query.Columns("*").From("NokhodGram_Users")
+	Wait For (Query.Execute) Complete (DatabaseResult As SupabaseDatabaseResult)
+	xSupabase.Database.PrintTable(DatabaseResult)
+	For Each Row As Map In DatabaseResult.Rows
+		If Row.Get("id")=id Then'Ignore
+			inf.Initialize
+			inf.id=Row.Get("id")
+			inf.Name=Row.Get("Name")
+			inf.Phone=Row.Get("Phone")
+			inf.LastSeen=Row.Get("LastSeen")
+			inf.Img=Row.Get("Avatar")
+			Return True
+			Exit
+		End If
+	Next
+	Sleep(0)
+	Return False
+End Sub
+
+Private Sub Add_Click
+	Dim sf As Object = xui.Msgbox2Async("عکس یا ویدیو", "نوع ارسال", "عکس", "", "ویدیو", Null)
+	Wait For (sf) Msgbox_Result (Result As Int)
+	If Result = xui.DialogResponse_Positive Then
+		Show_FileSelector
+	Else
+		Show_FileSelectorForVideo
+	End If
+End Sub
+
+Sub Show_Post(Text As String,Sended As String,Date As String,Time As String,Namee As String,sended_id As Int)
+	If Scroll.ScrollPosition=0 Then
+		Scroll.FullScroll(False)
+	End If
+	If Namee.EndsWith(".png")=True Then
+		Wait For(File_CheckForAvatar(inf.Img)) Complete (Result83 As String)
+		Dim imgg As ImageView
+		Dim Img As Bitmap=LoadBitmap(File.DirInternal,Namee)
+		Dim lb As Label
+		Dim Date_Time As Label
+		Dim seperator As Label
+		Dim sended_by As Label
+	
+		Date_Time.Initialize("")
+		sended_by.Initialize("")
+		lb.Initialize("lb")
+		seperator.Initialize("")
+		imgg.Initialize("img")
+	
+
+	
+		If Sended=File.ReadMap(File.DirInternal,"User.map").Get("Name") Then
+			Dim cs As CSBuilder
+			cs.Initialize.Bold.Clickable("User",sended_id).Append("شما").PopAll
+			cs.EnableClickEvents(sended_by)
+			sended_by.Text=cs
+		Else
+			Dim cs As CSBuilder
+			cs.Initialize.Bold.Clickable("User",sended_id).Append(Sended).PopAll
+			cs.EnableClickEvents(sended_by)
+			sended_by.Text=cs
+		End If
+	
+	
+		If Date=mpd.PersianDay&mpd.PersianMonthName Then
+			Date_Time.Text="   "&"امروز"&"   "&Time&"   "
+		Else
+			Date_Time.Text="   "&Date&"   "&Time&"   "
+		End If
+		Date_Time.Typeface=Typeface.LoadFromAssets("b-nazanin.ttf")
+		Date_Time.TextColor=Colors.Black
+		sended_by.TextColor=Colors.Black
+		Date_Time.Gravity=Gravity.RIGHT
+		sended_by.Gravity=Gravity.CENTER
+		sended_by.TextSize=sended_by.TextSize+5
+		seperator.Color=Colors.Black
+		imgg.Gravity=Gravity.FILL
+		lb.Text=CRLF&Text&CRLF&CRLF
+		lb.Gravity=Gravity.RIGHT
+		lb.TextColor=Colors.Black
+		lb.Typeface=Typeface.LoadFromAssets("b-nazanin.ttf")
+		lb.TextSize=lb.TextSize+4
+		lb.RemoveView
+		imgg.RemoveView
+		seperator.RemoveView
+		sended_by.RemoveView
+		Date_Time.RemoveView
+		Dim a As Int
+		a=(96%x*Img.Height)/Img.Width
+		Scroll.Panel.AddView(imgg,2%x,top,96%x,a)
+	
+		Dim Img1 As B4XBitmap = xui.LoadBitmapResize(File.DirInternal, Namee, imgg.Width, imgg.Height, True)
+		imgg.as(B4XView).SetBitmap(CreateRoundRectBitmap(Img1, 10dip)) 'imgg type is set to B4XView
+	
+		
+		
+		Dim imgg2 As ImageView
+		imgg2.Initialize("User1")
+				
+		Dim Img2 As B4XBitmap = xui.LoadBitmapResize(File.DirInternal, inf.Img, 45dip, 45dip, True)
+		imgg2.as(B4XView).SetBitmap(CreateRoundRectBitmap(Img2, 1000dip)) 'imgg type is set to B4XView
+		imgg2.Gravity=Gravity.FILL
+		imgg2.RemoveView
+		
+		
+		
+		
+		
+		Scroll.Panel.AddView(lb,6%x,top+a,88%x,2)
+		Dim su As StringUtils
+		lb.Height=su.MeasureMultilineTextHeight(lb,lb.Text)
+		Sleep(0)
+		Scroll.Panel.AddView(seperator,0,top+a+lb.Height,100%x,0.5%x)
+		Scroll.Panel.AddView(sended_by,0,top-45dip,100%x,45dip)
+		Scroll.Panel.AddView(imgg2,5dip,top-35dip,30dip,30dip)
+		Scroll.Panel.AddView(Date_Time,2%x,top-30dip,96%x,30dip)
+		Sleep(0)
+		top=top+a+10dip+lb.Height
+		Sleep(0)
+		Scroll.Panel.Height=top
+		Scroll.FullScroll(False)
+		top=top+50dip
+		Scroll.FullScroll(False)
+		
+		
+	Else
+		Wait For(File_CheckForAvatar(inf.Img)) Complete (Result83 As String)
+		playing=playing+1
+		Dim VV As VideoView
+		VV.Initialize("VV")
+		VV.Tag=playing
+		VV.MediaControllerEnabled=False
+		Dim bd As BitmapDrawable
+		bd.Initialize(LoadBitmap(File.DirAssets,"Silver-Blur-Background-Wallpaper-300x169.jpg"))
+		bd.Gravity=Gravity.FILL
+		VV.Background=bd
+		VV.RemoveView
+		Dim ass As Int
+		ass=(96%x*get_Vid_Height_Width(File.DirInternal,Namee).Get("H"))/get_Vid_Height_Width(File.DirInternal,Namee).Get("W")
+		Scroll.Panel.AddView(VV,2%x,top,96%x,ass)
+		Dim p As Panel
+		p.Initialize("p")
+		p.Color=Colors.Transparent
+		p.RemoveView
+		Scroll.Panel.AddView(p,2%x,top,96%x,ass)
+		VV.LoadVideo(File.DirInternal,Namee)
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		Dim lb As Label
+		Dim Date_Time As Label
+		Dim seperator As Label
+		Dim sended_by As Label
+	
+		Date_Time.Initialize("")
+		sended_by.Initialize("")
+		lb.Initialize("lb")
+		seperator.Initialize("")
+	
+
+	
+		If Sended=File.ReadMap(File.DirInternal,"User.map").Get("Name") Then
+			Dim cs As CSBuilder
+			cs.Initialize.Bold.Clickable("User",sended_id).Append("شما").PopAll
+			cs.EnableClickEvents(sended_by)
+			sended_by.Text=cs
+		Else
+			Dim cs As CSBuilder
+			cs.Initialize.Bold.Clickable("User",sended_id).Append(Sended).PopAll
+			cs.EnableClickEvents(sended_by)
+			sended_by.Text=cs
+		End If
+	
+	
+		If Date=mpd.PersianDay&mpd.PersianMonthName Then
+			Date_Time.Text="   "&"امروز"&"   "&Time&"   "
+		Else
+			Date_Time.Text="   "&Date&"   "&Time&"   "
+		End If
+		Date_Time.Typeface=Typeface.LoadFromAssets("b-nazanin.ttf")
+		Date_Time.TextColor=Colors.Black
+		sended_by.TextColor=Colors.Black
+		Date_Time.Gravity=Gravity.RIGHT
+		sended_by.Gravity=Gravity.CENTER
+		sended_by.TextSize=sended_by.TextSize+5
+		seperator.Color=Colors.Black
+		lb.Text=CRLF&Text&CRLF&CRLF
+		lb.Gravity=Gravity.RIGHT
+		lb.TextColor=Colors.Black
+		lb.Typeface=Typeface.LoadFromAssets("b-nazanin.ttf")
+		lb.TextSize=lb.TextSize+4
+		lb.RemoveView
+		seperator.RemoveView
+		sended_by.RemoveView
+		Date_Time.RemoveView
+	
+
+	
+		
+		
+		Dim imgg2 As ImageView
+		imgg2.Initialize("User1")
+		Dim Img2 As B4XBitmap = xui.LoadBitmapResize(File.DirInternal, inf.Img, 45dip, 45dip, True)
+		imgg2.as(B4XView).SetBitmap(CreateRoundRectBitmap(Img2, 1000dip)) 'imgg type is set to B4XView
+		imgg2.Gravity=Gravity.FILL
+		imgg2.RemoveView
+		
+		
+		
+		
+		
+		Scroll.Panel.AddView(lb,6%x,top+ass,88%x,2)
+		Dim su As StringUtils
+		lb.Height=su.MeasureMultilineTextHeight(lb,lb.Text)
+		Sleep(0)
+		Scroll.Panel.AddView(seperator,0,top+ass+lb.Height,100%x,0.5%x)
+		Scroll.Panel.AddView(sended_by,0,top-45dip,100%x,45dip)
+		Scroll.Panel.AddView(imgg2,5dip,top-35dip,30dip,30dip)
+		Scroll.Panel.AddView(Date_Time,2%x,top-30dip,96%x,30dip)
+		Scroll.FullScroll(False)
+		Sleep(0)
+		top=top+ass+10dip+lb.Height+50dip
+		Sleep(0)
+		Scroll.Panel.Height=top
+		Scroll.FullScroll(False)
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		Scroll_ScrollChanged(2)
+	End If
+End Sub
+
+Sub Upload_File(Dir As String,FileName As String,text As String)
+	Dim UploadFile As Supabase_StorageFile = xSupabase.Storage.UploadFile("posts",FileName)
+	UploadFile.FileBody(xSupabase.Storage.ConvertFile2Binary(Dir,FileName))
+	Wait For (UploadFile.Execute) Complete (StorageFile As SupabaseStorageFile)
+	If StorageFile.Error.Success Then
+		Log($"File ${"test.jpg"} successfully uploaded "$)
+		Send_Image_Req(text,FileName)
+	Else
+		Log("Error: " & StorageFile.Error.ErrorMessage)
+	End If
+End Sub
+
+Sub GenerateUniqueText As String
+	Dim now As Long = DateTime.Now
+	Dim year As Int = DateTime.GetYear(now)
+	Dim month As Int = DateTime.GetMonth(now)
+	Dim day As Int = DateTime.GetDayOfMonth(now)
+	Dim hour As Int = DateTime.GetHour(now)
+	Dim minute As Int = DateTime.GetMinute(now)
+	Dim second As Int = DateTime.GetSecond(now)
+    
+	'Generate a random part
+	Dim randomPart As String = GenerateRandomString(8)
+    
+	'Combine all parts to create a unique string
+	Dim uniqueString As String = $"${year}${month}${day}_${hour}${minute}${second}$_${randomPart}"$
+    
+	Return uniqueString
+End Sub
+
+Sub GenerateRandomString(Length As Int) As String
+	Dim sb As StringBuilder
+	sb.Initialize
+	Dim chars As String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	For i = 1 To Length
+		Dim index As Int = Rnd(0, chars.Length)
+		sb.Append(chars.CharAt(index))
+	Next
+	Return sb.ToString
+End Sub
+
+Sub Download_Img(name As String)As ResumableSub
+	Dim DownloadFile As Supabase_StorageFile = xSupabase.Storage.DownloadFile("posts",name)
+	Wait For (DownloadFile.Execute) Complete (StorageFile As SupabaseStorageFile)
+	If StorageFile.Error.Success Then
+		BytesToFile(File.DirInternal,name,StorageFile.FileBody)
+		Return True
+	Else
+		Log("Error: " & StorageFile.Error.ErrorMessage)
+		Return False
+	End If
+End Sub
+
+Sub Download_ImgForAvatar(name As String)As ResumableSub
+	Dim DownloadFile As Supabase_StorageFile = xSupabase.Storage.DownloadFile("avatar",name)
+	Wait For (DownloadFile.Execute) Complete (StorageFile As SupabaseStorageFile)
+	If StorageFile.Error.Success Then
+		BytesToFile(File.DirInternal,name,StorageFile.FileBody)
+		Return True
+	Else
+		Log("Error: " & StorageFile.Error.ErrorMessage)
+		Return False
+	End If
+End Sub
+
+
+Sub BytesToFile (Dir As String, FileName As String, Data() As Byte)
+	Dim out As OutputStream = File.OpenOutput(Dir, FileName, False)
+	out.WriteBytes(Data, 0, Data.Length)
+	out.Close
+End Sub
+
+Sub File_Check2(filename As String)As ResumableSub
+	If File.Exists(File.dirinternal,filename)=False Then
+		Wait For(Download_Img(filename)) Complete (Result As Boolean)
+	End If
+	Return filename
+End Sub
+
+Sub File_CheckForAvatar(filename As String)As ResumableSub
+	If File.Exists(File.dirinternal,filename)=False Then
+		Wait For(Download_ImgForAvatar(filename)) Complete (Result As Boolean)
+	End If
+	Return filename
+End Sub
+
+Sub Clear_Scroll As ResumableSub
+	Sleep(0)
+	Log("")
+	Scroll.Panel.RemoveAllViews
+	top=5%y
+	Sleep(0)
+	Log("")
+	If Scroll.Panel.NumberOfViews=0 Then
+		Return True
+	Else
+		Return False
+	End If
+End Sub
+
+Private Sub img_LongClick
+	Dim imgv As ImageView=Sender
+	zoo.Initialize3(imgv.Bitmap)
+	Activity.Finish
+	StartActivity(Zoom)
+End Sub
+
+Sub CreateRoundRectBitmap (Input As B4XBitmap, Radius As Float) As B4XBitmap
+	Dim BorderColor As Int = xui.Color_Black
+	Dim BorderWidth As Int = 0
+	Dim c As B4XCanvas
+	Dim xview As B4XView = xui.CreatePanel("")
+	xview.SetLayoutAnimated(0, 0, 0, Input.Width, Input.Height)
+	c.Initialize(xview)
+	Dim path As B4XPath
+	path.InitializeRoundedRect(c.TargetRect, Radius)
+	c.ClipPath(path)
+	c.DrawRect(c.TargetRect, BorderColor, True, BorderWidth) 'border
+	c.RemoveClip
+	Dim r As B4XRect
+	r.Initialize(BorderWidth, BorderWidth, c.TargetRect.Width - BorderWidth, c.TargetRect.Height - BorderWidth)
+	path.InitializeRoundedRect(r, Radius - 0.7 * BorderWidth)
+	c.ClipPath(path)
+	c.DrawBitmap(Input, r)
+	c.RemoveClip
+	c.Invalidate
+	Dim res As B4XBitmap = c.CreateBitmap
+	c.Release
+	Return res
+End Sub
+
+Sub User_Click (Tag As Object)
+	Wait For(Load_He_Information(Tag)) Complete (Result As Boolean)
+	HisID=inf.id
+	Sleep(0)
+	Activity.Finish
+	StartActivity(HisProf)
+End Sub
+
+Private Sub Settings_Click
+	Activity.Finish
+	StartActivity(Settings)
+End Sub
+
+Sub IsViewVisible(v As View) As Boolean
+	If v.Top=Scroll.ScrollPosition Or v.Top>Scroll.ScrollPosition And (v.Top+v.Height)<(50%x+Scroll.ScrollPosition+v.Height) Then
+		Return True
+	Else
+		Return False
+	End If
+End Sub
+
+Sub Scroll_ScrollChanged(Position As Int)
+	For Each v As View In Scroll.Panel.GetAllViewsRecursive
+		If v Is VideoView Then
+			If IsViewVisible(v)=True Then
+				If v.As(VideoView).IsPlaying=False And IsOnePlaying=False Then
+					cd.Initialize(Colors.Transparent,0)
+					v.As(VideoView).Play
+					v.As(VideoView).Background=cd
+					IsOnePlaying=True
+				End If
+			Else
+				If v.As(VideoView).IsPlaying=True Then
+					v.As(VideoView).Pause
+					IsOnePlaying=False
+				End If
+			End If
+		End If
+	Next
+End Sub
+
+Sub Show_FileSelectorForVideo
+	Dim Chooser As ContentChooser
+	Chooser.Initialize("chooserVid")
+	Chooser.Show("video/*", "Select video")
+End Sub
+
+Sub chooserVid_Result (Success As Boolean, Dir As String, FileName As String)
+	If Success Then
+		Dim id As InputDialog
+		Dim sf As Object = id.ShowAsync("", "عنوان پست را اضافه کنید", "تایید", "", "انصراف", Null, False)
+		Wait For (sf) Dialog_Result(Result As Int)
+		If Result = DialogResponse.POSITIVE And id.Input<>"" Then
+			ProgressDialogShow2("در حال آپلود...",False)
+			Dim a As String=GenerateUniqueText&".mp4"
+			File.Copy(Dir,FileName,File.dirinternal,a)			
+			Upload_File(File.dirinternal,a,id.Input)
+		End If
+	Else
+		ToastMessageShow("تصویری انتخاب نشده", True)
+		Scroll_ScrollChanged(2)
+	End If
+End Sub
+
+Sub get_Vid_Height_Width(Dir As String,VideoName As String)As Map
+	Dim vidfile As String
+	vidfile = File.Combine(Dir, VideoName)
+   
+	Dim rfl As Reflector
+	Dim obj As Object
+	Dim b As Bitmap
+     
+	obj = rfl.CreateObject("android.media.MediaMetadataRetriever")
+	rfl.Target = obj
+	rfl.RunMethod2("setDataSource", vidfile, "java.lang.String")
+	b = rfl.RunMethod3("getFrameAtTime", 0, "java.lang.long", 3, "java.lang.int")
+    
+	Return CreateMap("H":b.Height,"W":b.Width)
+End Sub
+
+Private Sub VV_Complete
+	Dim v As VideoView=Sender
+	v.Play
+End Sub
+
+Sub p_Click
+	Dim ph As Phone
+	If ph.GetVolume(ph.VOLUME_MUSIC)=0 Then
+		ph.SetVolume(ph.VOLUME_MUSIC,LastVol,False)
+	Else
+		LastVol=ph.GetVolume(ph.VOLUME_MUSIC)
+		ph.SetVolume(ph.VOLUME_MUSIC,0,False)
+	End If
+End Sub
+
+Sub Share_By_Gallary As ResumableSub
+    Dim Intent1 As Intent
+    Intent1 = Activity.GetStartingIntent
+    If Intent1.Action = "android.intent.action.SEND" Then
+        Log("Invoked by Share Via")
+    Else If Intent1.Action = "android.intent.action.MAIN" Then
+        Log("Invoked by Clicking on App")
+    Else        
+        Log("Should not happen")
+    End If    
+    Log("Action    :"&Intent1.Action)
+    Log("GetExtra :"&Intent1.GetExtra("android.intent.extra.TEXT"))
+    Log("Extras    :"&Intent1.ExtrasToString)
+    Log("GetData :"&Intent1.GetData)
+    Log("GetExtra:"&Intent1.GetExtra("android.intent.extra.TEXT"))
+    Log(Intent1.HasExtra("EXTRA_TEXT"))
+	Dim jIntent As JavaObject = Activity.StartingIntent
+	Dim bundle As JavaObject = jIntent.RunMethod("getExtras", Null)
+	Dim links() As String = bundle.RunMethod("getStringArrayExtra", Array As Object("android.intent.extra.STREAM"))
+	For Each link As String In links
+		Log(link)
+	Next
+End Sub
