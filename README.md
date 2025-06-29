@@ -1,5 +1,5 @@
 
-# 📸 Nokhodgram
+# Nokhodgram
 
 **Nokhodgram** is an open-source Instagram clone for Android, developed using [B4A (Basic4Android)](https://www.b4x.com/b4a.html) and powered by [Supabase](https://supabase.io) as the backend service.
 
@@ -13,16 +13,15 @@
 
 ## ✨ Features
 
-- 🧑‍💼 User authentication (Sign up / Login)
-- 🖼 Upload and share images
-- 📥 View feed from other users
-- ❤️ Like system (optional / in progress)
-- 📱 Native Android UI built with B4A
-- ☁️ Supabase backend integration
+- User authentication (Sign up (Im Working on Login))
+- Upload and share images or videos
+-  Like system (in progress)
+-  Native Android UI built with B4A
+-  Supabase backend integration
 
 ---
 
-## 🛠 Installation
+## Installation
 
 ### Prerequisites
 
@@ -46,31 +45,15 @@
 
 ---
 
-## 📁 Project Structure
-
-```text
-Nokhodgram/
-├── Files/
-├── Objects/
-├── Starter.bas
-├── Main.bas
-├── Login.bas
-├── SignUp.bas
-├── Feed.bas
-├── Upload.bas
-├── Config.bas
-└── ...
-```
-
 ---
 
 ## 📷 Screenshots
 
-_(Add your screenshots here)_
+_(comming soon)_
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Feel free to fork this project and submit pull requests.
 
