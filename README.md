@@ -1,7 +1,7 @@
 
 # Nokhodgram
 
-**Nokhodgram** is an open-source Instagram clone for Android, developed using [B4A (Basic4Android)](https://www.b4x.com/b4a.html) and powered by [Supabase](https://supabase.io) as the backend service.
+**Nokhodgram** is an open-source Instagram clone for Android, developed using [B4A (Basic4Android)](https://www.b4x.com/b4a.html) and powered by [Supabase](https://supabase.com) as the backend service.
 
 <p align="center">
   <img src="https://img.shields.io/github/license/PythonCoder1389/Nokhodgram" alt="License">
@@ -42,8 +42,6 @@
 3. Set your Supabase API URL and Key inside the configuration module (`Config.bas` or similar).
 
 4. Compile and run on your Android device.
-
----
 
 ---
 
