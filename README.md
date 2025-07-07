@@ -39,7 +39,7 @@
 
 2. Open the project in B4A.
 
-3. Set your Supabase API URL and Key inside the configuration module (`Config.bas` or similar).
+3. Set your Supabase API URL and Key.
 
 4. Compile and run on your Android device.
 
